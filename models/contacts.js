@@ -1,52 +1,52 @@
-const fs = require('fs').promises;
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
 
-const contactsPath = path.join(__dirname, 'contacts.json');
-
-const readContacts = async () => {
-  const data = await fs.readFile(contactsPath, 'utf8');
-  return JSON.parse(data);
-};
-
-const writeContacts = async (contacts) => {
-  await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
-};
-
+const Contact = require('./contact'); 
+const { contactSchema } = require('./validation'); 
 
 const listContacts = async () => {
-  return await readContacts();
+  return await Contact.find(); 
 };
 
 const getContactById = async (contactId) => {
-  const contacts = await readContacts();
-  return contacts.find(contact => contact.id === contactId) || null;
+  return await Contact.findById(contactId);
 };
 
 const addContact = async ({ name, email, phone }) => {
-  const contacts = await readContacts();
-  const newContact = { id: uuidv4(), name, email, phone };
-  contacts.push(newContact);
-  await writeContacts(contacts);
-  return newContact;
+  
+  const { error } = contactSchema.validate({ name, email, phone });
+  if (error) {
+    throw new Error(`Validation error: ${error.details[0].message}`);
+  }
+
+  
+  const duplicate = await Contact.findOne({ $or: [{ name }, { phone }] });
+  if (duplicate) {
+    throw new Error('Contact with this name or phone number already exists');
+  }
+
+  return await Contact.create({ name, email, phone });
 };
 
 const removeContact = async (contactId) => {
-  const contacts = await readContacts();
-  const index = contacts.findIndex(contact => contact.id === contactId);
-  if (index === -1) return null;
-  const [removedContact] = contacts.splice(index, 1);
-  await writeContacts(contacts);
-  return removedContact;
+  return await Contact.findByIdAndDelete(contactId);
 };
 
 const updateContact = async (contactId, body) => {
-  const contacts = await readContacts();
-  const index = contacts.findIndex(contact => contact.id === contactId);
-  if (index === -1) return null;
-  contacts[index] = { ...contacts[index], ...body };
-  await writeContacts(contacts);
-  return contacts[index];
+  
+  const { error } = contactSchema.validate(body);
+  if (error) {
+    throw new Error(`Validation error: ${error.details[0].message}`);
+  }
+
+  return await Contact.findByIdAndUpdate(contactId, body, { new: true });
+};
+
+const updateStatusContact = async (contactId, { favorite }) => {
+  if (typeof favorite !== 'boolean') {
+    throw new Error('Validation error: "favorite" must be a boolean');
+  }
+
+  return await Contact.findByIdAndUpdate(contactId, { favorite }, { new: true });
+
 };
 
 module.exports = {
@@ -55,4 +55,6 @@ module.exports = {
   addContact,
   removeContact,
   updateContact,
+  updateStatusContact,
+
 };
