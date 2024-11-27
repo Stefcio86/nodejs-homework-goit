@@ -2,7 +2,9 @@ const express = require('express');
 const { contactSchema } = require('../../models/validation');
 const { listContacts, getContactById, addContact, removeContact, updateContact, updateStatusContact,} = require('../../models/contacts');
 
+
 const router = express.Router();
+
 
 
 router.get('/', async (req, res) => {
@@ -40,10 +42,12 @@ router.post('/', async (req, res) => {
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
+
 });
 
 
 router.delete('/:contactId', async (req, res) => {
+
   try {
     const removedContact = await removeContact(req.params.contactId);
     if (!removedContact) {

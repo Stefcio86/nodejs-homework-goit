@@ -1,3 +1,4 @@
+
 const Contact = require('./contact'); 
 const { contactSchema } = require('./validation'); 
 
@@ -45,6 +46,7 @@ const updateStatusContact = async (contactId, { favorite }) => {
   }
 
   return await Contact.findByIdAndUpdate(contactId, { favorite }, { new: true });
+
 };
 
 module.exports = {
@@ -54,4 +56,5 @@ module.exports = {
   removeContact,
   updateContact,
   updateStatusContact,
+
 };
