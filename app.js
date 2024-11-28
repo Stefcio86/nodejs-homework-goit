@@ -14,13 +14,6 @@ app.use(cors());
 app.use(express.json());
 
 
-app.use((req, res, next) => {
-  if (!req.is('application/json')) {
-    return res.status(400).json({ message: 'Content-Type must be application/json' });
-  }
-  next();
-});
-
 
 app.use('/api/contacts', contactsRouter);
 
