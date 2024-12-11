@@ -3,6 +3,9 @@ const logger = require('morgan');
 const cors = require('cors');
 
 const contactsRouter = require('./routes/api/contacts');
+const usersRouter = require('./routes/api/users');
+const testRouter = require('./routes/api/test'); 
+
 
 const app = express();
 
@@ -13,9 +16,9 @@ app.use(logger(formatsLogger));
 app.use(cors());
 app.use(express.json());
 
-
-
 app.use('/api/contacts', contactsRouter);
+app.use('/api/users', usersRouter);
+app.use('/api/test', testRouter); 
 
 
 app.use((req, res) => {
@@ -24,7 +27,8 @@ app.use((req, res) => {
 
 
 app.use((err, req, res, next) => {
-  console.error(err.stack); 
+  console.error(err.stack);
+
   res.status(500).json({ message: err.message });
 });
 

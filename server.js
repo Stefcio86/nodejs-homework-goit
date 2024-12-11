@@ -1,12 +1,23 @@
-require('dotenv').config(); 
-const app = require('./app'); 
-const connectDB = require('./db'); 
 
-const PORT = process.env.PORT || 3000; 
+require('dotenv').config();
+const mongoose = require('mongoose');
+const app = require('./app');
 
 
-connectDB();
+const { DB_HOST, PORT = 3000 } = process.env;
 
-app.listen(PORT, () => {
-  console.log(`Server running. Use our API on port: ${PORT}`);
-});
+mongoose.connect(DB_HOST, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => {
+    console.log('Database connection successful');
+    app.listen(PORT, () => {
+      console.log(`Server running. Use our API on port: ${PORT}`);
+    });
+  })
+  .catch(error => {
+    console.error('Database connection error:', error.message);
+    process.exit(1);
+  });
+  mongoose.connection.on('error', err => {
+    console.error('Mongoose connection error:', err.message);
+  });
+
