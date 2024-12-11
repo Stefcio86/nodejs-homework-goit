@@ -1,52 +1,35 @@
-const fs = require('fs').promises;
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+const Contact = require('./contact');
 
-const contactsPath = path.join(__dirname, 'contacts.json');
-
-const readContacts = async () => {
-  const data = await fs.readFile(contactsPath, 'utf8');
-  return JSON.parse(data);
+const listContacts = async (userId) => {
+  return await Contact.find({ owner: userId });
 };
 
-const writeContacts = async (contacts) => {
-  await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
+const getContactById = async (contactId, userId) => {
+  return await Contact.findOne({ _id: contactId, owner: userId });
 };
 
-
-const listContacts = async () => {
-  return await readContacts();
+const addContact = async (data, userId) => {
+  return await Contact.create({ ...data, owner: userId });
 };
 
-const getContactById = async (contactId) => {
-  const contacts = await readContacts();
-  return contacts.find(contact => contact.id === contactId) || null;
+const removeContact = async (contactId, userId) => {
+  return await Contact.findOneAndDelete({ _id: contactId, owner: userId });
 };
 
-const addContact = async ({ name, email, phone }) => {
-  const contacts = await readContacts();
-  const newContact = { id: uuidv4(), name, email, phone };
-  contacts.push(newContact);
-  await writeContacts(contacts);
-  return newContact;
+const updateContact = async (contactId, data, userId) => {
+  return await Contact.findOneAndUpdate(
+    { _id: contactId, owner: userId },
+    data,
+    { new: true }
+  );
 };
 
-const removeContact = async (contactId) => {
-  const contacts = await readContacts();
-  const index = contacts.findIndex(contact => contact.id === contactId);
-  if (index === -1) return null;
-  const [removedContact] = contacts.splice(index, 1);
-  await writeContacts(contacts);
-  return removedContact;
-};
-
-const updateContact = async (contactId, body) => {
-  const contacts = await readContacts();
-  const index = contacts.findIndex(contact => contact.id === contactId);
-  if (index === -1) return null;
-  contacts[index] = { ...contacts[index], ...body };
-  await writeContacts(contacts);
-  return contacts[index];
+const updateStatusContact = async (contactId, favorite, userId) => {
+  return await Contact.findOneAndUpdate(
+    { _id: contactId, owner: userId },
+    { favorite },
+    { new: true }
+  );
 };
 
 module.exports = {
@@ -55,4 +38,5 @@ module.exports = {
   addContact,
   removeContact,
   updateContact,
+  updateStatusContact,
 };

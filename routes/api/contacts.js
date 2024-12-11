@@ -1,50 +1,92 @@
 const express = require('express');
-const Joi = require('joi');
-const { listContacts, getContactById, addContact, removeContact, updateContact } = require('../../models/contacts');
+const auth = require('../../middlewares/auth'); 
+const {
+  listContacts,
+  getContactById,
+  addContact,
+  removeContact,
+  updateContact,
+  updateStatusContact,
+} = require('../../models/contact');
 
 const router = express.Router();
 
 
-const contactSchema = Joi.object({
-  name: Joi.string().required(),
-  email: Joi.string().email().required(),
-  phone: Joi.string().pattern(/^\(\d{3}\) \d{3}-\d{4}$/).required(),
+router.get('/', auth, async (req, res) => {
+  try {
+    const contacts = await listContacts(req.user._id);
+    res.status(200).json(contacts);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 
-router.get('/', async (req, res) => {
-  const contacts = await listContacts();
-  res.status(200).json(contacts);
-});
-
-router.get('/:contactId', async (req, res) => {
-  const contact = await getContactById(req.params.contactId);
-  if (!contact) return res.status(404).json({ message: 'Not found' });
-  res.status(200).json(contact);
-});
-
-
-router.post('/', async (req, res) => {
-  const { error } = contactSchema.validate(req.body);
-  if (error) return res.status(400).json({ message: `missing required ${error.details[0].context.key} - field` });
-  
-  const newContact = await addContact(req.body);
-  res.status(201).json(newContact);
+router.get('/:contactId', auth, async (req, res) => {
+  try {
+    const contact = await getContactById(req.params.contactId, req.user._id);
+    if (!contact) {
+      return res.status(404).json({ message: 'Not found' });
+    }
+    res.status(200).json(contact);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 
-router.delete('/:contactId', async (req, res) => {
-  const removedContact = await removeContact(req.params.contactId);
-  if (!removedContact) return res.status(404).json({ message: 'Not found' });
-  res.status(200).json({ message: 'contact deleted' });
+router.post('/', auth, async (req, res) => {
+  try {
+    const newContact = await addContact(req.body, req.user._id);
+    res.status(201).json(newContact);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
-router.put('/:contactId', async (req, res) => {
-  if (Object.keys(req.body).length === 0) return res.status(400).json({ message: 'missing fields' });
 
-  const updatedContact = await updateContact(req.params.contactId, req.body);
-  if (!updatedContact) return res.status(404).json({ message: 'Not found' });
-  res.status(200).json(updatedContact);
+router.delete('/:contactId', auth, async (req, res) => {
+  try {
+    const removedContact = await removeContact(req.params.contactId, req.user._id);
+    if (!removedContact) {
+      return res.status(404).json({ message: 'Not found' });
+    }
+    res.status(200).json({ message: 'contact deleted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
+router.put('/:contactId', auth, async (req, res) => {
+  try {
+    const updatedContact = await updateContact(req.params.contactId, req.body, req.user._id);
+    if (!updatedContact) {
+      return res.status(404).json({ message: 'Not found' });
+    }
+    res.status(200).json(updatedContact);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
+router.patch('/:contactId/favorite', auth, async (req, res) => {
+  const { favorite } = req.body;
+
+  if (favorite === undefined) {
+    return res.status(400).json({ message: 'missing field favorite' });
+  }
+
+  try {
+    const updatedContact = await updateStatusContact(req.params.contactId, favorite, req.user._id);
+    if (!updatedContact) {
+      return res.status(404).json({ message: 'Not found' });
+    }
+    res.status(200).json(updatedContact);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 module.exports = router;
