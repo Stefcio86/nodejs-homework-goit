@@ -1,3 +1,4 @@
+
 const Contact = require('./contact');
 
 const listContacts = async (userId) => {

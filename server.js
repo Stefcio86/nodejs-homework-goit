@@ -1,3 +1,4 @@
+
 require('dotenv').config();
 const mongoose = require('mongoose');
 const app = require('./app');
@@ -19,3 +20,4 @@ mongoose.connect(DB_HOST, { useNewUrlParser: true, useUnifiedTopology: true })
   mongoose.connection.on('error', err => {
     console.error('Mongoose connection error:', err.message);
   });
+
