@@ -9,6 +9,8 @@ const {
   updateStatusContact,
 } = require('../../models/contacts');
 
+
+
 const router = express.Router();
 
 
@@ -35,14 +37,17 @@ router.get('/:contactId', auth, async (req, res) => {
 });
 
 
+
 router.post('/', auth, async (req, res) => {
   try {
     const newContact = await addContact(req.body, req.user._id);
     res.status(201).json(newContact);
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
+
 
 
 router.delete('/:contactId', auth, async (req, res) => {
@@ -65,13 +70,16 @@ router.put('/:contactId', auth, async (req, res) => {
       return res.status(404).json({ message: 'Not found' });
     }
     res.status(200).json(updatedContact);
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
 
+
 router.patch('/:contactId/favorite', auth, async (req, res) => {
+
   const { favorite } = req.body;
 
   if (favorite === undefined) {
@@ -79,7 +87,9 @@ router.patch('/:contactId/favorite', auth, async (req, res) => {
   }
 
   try {
+
     const updatedContact = await updateStatusContact(req.params.contactId, favorite, req.user._id);
+
     if (!updatedContact) {
       return res.status(404).json({ message: 'Not found' });
     }
@@ -88,5 +98,6 @@ router.patch('/:contactId/favorite', auth, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+
 
 module.exports = router;
