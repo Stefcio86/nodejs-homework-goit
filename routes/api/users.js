@@ -1,12 +1,21 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const gravatar = require('gravatar');
+const fs = require('fs/promises');
+const path = require('path');
+const Jimp = require('jimp');
 const User = require('../../models/user');
 const auth = require('../../middlewares/auth');
+const upload = require('../../middlewares/upload');
 const { signupSchema, loginSchema } = require('../../validation');
 
 const router = express.Router();
 const { SECRET_KEY } = process.env;
+
+
+const avatarsDir = path.join(__dirname, '../../public/avatars');
+
 
 router.post('/signup', async (req, res) => {
   try {
@@ -21,16 +30,21 @@ router.post('/signup', async (req, res) => {
       return res.status(409).json({ message: 'Email in use' });
     }
 
+    
+    const avatarURL = gravatar.url(email, { s: '250', d: 'retro' }, true);
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await User.create({
       email,
       password: hashedPassword,
+      avatarURL,
     });
 
     res.status(201).json({
       user: {
         email: newUser.email,
         subscription: newUser.subscription,
+        avatarURL: newUser.avatarURL,
       },
     });
   } catch (error) {
@@ -100,6 +114,38 @@ router.get('/current', auth, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
-console.log('SECRET_KEY:', SECRET_KEY);
+
+
+router.patch('/avatars', auth, upload.single('avatar'), async (req, res) => {
+  try {
+    
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const { path: tempPath, originalname } = req.file;
+    const { _id } = req.user;
+
+    
+    const filename = `${_id}-${Date.now()}-${originalname}`;
+    const resultPath = path.join(avatarsDir, filename);
+
+    
+    const image = await Jimp.read(tempPath);
+    await image.resize(250, 250).writeAsync(resultPath);
+
+    
+    await fs.unlink(tempPath);
+
+   
+    const avatarURL = `/avatars/${filename}`;
+    await User.findByIdAndUpdate(_id, { avatarURL });
+
+    res.status(200).json({ avatarURL });
+  } catch (error) {
+    console.error('Error updating avatar:', error.message);
+    res.status(500).json({ message: error.message });
+  }
+});
 
 module.exports = router;
